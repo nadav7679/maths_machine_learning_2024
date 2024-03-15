@@ -80,7 +80,7 @@ sqrt_alphas_cumprod = torch.sqrt(cumprod)
 sqrt_one_minus_alphas_cumprod = torch.sqrt(1 - cumprod)
 
 # Simulate forward diffusion
-simulate_forward_diffusion = True
+simulate_forward_diffusion = False
 if simulate_forward_diffusion:
     batch = next(iter(dataloader))["pixel_values"]
     num_images = 10
@@ -93,3 +93,37 @@ if simulate_forward_diffusion:
         plt.show()
 
 # TODO: experiment with different betas and hyperparameters for noise addition.
+
+
+class SinusoidalPositionEmbeddings(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.dim = dim
+
+    def forward(self, time):
+        res = torch.zeros((len(time), self.dim), dtype=torch.float32)
+
+        pos = torch.arange(len(time)).unsqueeze(1)
+        two_i = torch.arange(0, self.dim, 2)
+
+        arg = torch.exp(torch.log(pos) - two_i * torch.log(torch.tensor(10**4)) / self.dim)
+
+        res[:, 0::2] = torch.sin(arg)
+        res[:, 1::2] = torch.cos(arg)
+
+        return res
+
+show_sin_embed = False
+if show_sin_embed:
+    d = 100
+    N = 60
+    embed = SinusoidalPositionEmbeddings(d)
+    res = embed(torch.linspace(0.001, 1, N))
+
+    plt.imshow(res)
+    plt.xlabel(f"Embedding dimension - d={d}")
+    plt.ylabel(f"Original dimension - time position - N={N}")
+    plt.gca().invert_yaxis()
+    plt.show()
+
+# TODO: add discussion and nice plot of embedding
