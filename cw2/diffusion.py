@@ -12,7 +12,7 @@ def get_index_from_list(vals, t, x_shape):
     while considering the batch dimension.
     """
     batch_size = t.shape[0]
-    out = vals.gather(-1, t.cpu())
+    out = vals.gather(-1, t)
     return out.reshape(batch_size, *((1,) * (len(x_shape) - 1))).to(t.device)
 
 
@@ -95,11 +95,12 @@ class Diffusion():
         img = torch.randn(shape, device=self.device)
         imgs = []
         for i in tqdm(reversed(range(0, self.T)), desc='Sampling loop time step', total=self.T):
-            t = torch.full((batch_size,), i, device=device, dtype=torch.long)
+            t = torch.full((batch_size,), i, device=self.device, dtype=torch.long)
             img = self.sample_timestep(img, t, i)
             imgs.append(img.cpu().numpy())
 
         return imgs
+
 
 
 if __name__ == "__main__":

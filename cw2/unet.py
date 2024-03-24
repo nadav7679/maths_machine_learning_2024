@@ -62,8 +62,8 @@ class SimpleUnet(nn.Module):
         self.device = device
 
         image_channels = 1
-        down_channels = [2 * (2 ** i) for i in range(self.depth + 1)]
-        up_channels = [(2 * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
+        down_channels = [6 * (2 ** i) for i in range(self.depth + 1)]
+        up_channels = [(6 * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
         out_dim = image_channels
         time_emb_dim = IMG_SIZE
 
