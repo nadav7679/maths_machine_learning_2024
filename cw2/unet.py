@@ -1,8 +1,7 @@
 import torch
 import torch.nn as nn
 
-from time_embed import SinusoidalPositionEmbeddings
-
+from time_embedding import SinusoidalPositionEmbeddings
 
 IMG_SIZE = 28
 BATCH_SIZE = 128
@@ -51,35 +50,42 @@ class SimpleUnet(nn.Module):
     """
     A simplified variant of the Unet architecture.
     """
-    def __init__(self):
-        global IMG_SIZE
 
+    def __init__(self, device):
         super().__init__()
-        self.depth = 2  # Has to be below 3 to avoid problems with image size HW
+
+        #: The 'depth' of the unet, i.e. the amount of down blocks and up blocks.
+        #: It has to be below 3 to avoid various problems with image size H,W (e.g. H,W shrinks to 1,1 which is too
+        #: small to kernel size, or unmatching H,W between same-level up and down blocks)
+        self.depth = 2
+        #: Device
+        self.device = device
+
         image_channels = 1
-        down_channels = [ 2 * (2 ** i) for i in range(self.depth + 1)] # These are the channels that we want to obtain in the downsampling stage; DEFINE YOURSELF!
-        up_channels = [ (2 * 2 ** (self.depth-i)) for i in range(self.depth + 1)] # These are the channels that we want to obtain in the upsampling stage; DEFINE YOURSELF!
-        out_dim = image_channels # DEFINE THIS CORRECTLY
-        time_emb_dim = IMG_SIZE # DEFINE THIS CORRECTLY
+        down_channels = [2 * (2 ** i) for i in range(self.depth + 1)]
+        up_channels = [(2 * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
+        out_dim = image_channels
+        time_emb_dim = IMG_SIZE
 
-        # Time embedding consists of a Sinusoidal embedding, a linear map that maintains the dimensions and a rectified linear unit activation.
-        self.time_embed = SinusoidalPositionEmbeddings(time_emb_dim)
+        #: Sinusoidal time embedding
+        self.time_embed = SinusoidalPositionEmbeddings(time_emb_dim, device)
 
-        # Initial projection consisting of a map from image_channels to down_channels[0] with a filter size of e.g. 3 and padding of 1.
+        #: Initial projection to down_channels[0]
         self.project_up = nn.Conv2d(image_channels, down_channels[0], (3, 3), padding=(1, 1))
 
-        # Downsample: use the Blocks given above to define down_channels number of downsampling operations. These operations should cha
-        # TO WRITE CODE HERE; HINT: use something like Block(down_channels[i], down_channels[i+1], time_emb_dim) the right number of times.
-        self.down = []
+        # Downsample and upsample
+        down = []
         for i in range(self.depth):
-            self.down.append(Block(down_channels[i], down_channels[i+1], time_emb_dim))
+            down.append(Block(down_channels[i], down_channels[i + 1], time_emb_dim))
 
-        # Upsample
-        self.up = []
+        up = []
         for i in range(self.depth):
-            self.up.append(Block(up_channels[i], up_channels[i+1], time_emb_dim, True))
+            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, True))
 
-        # Final output: given by a final convolution that maps up_channels[-1] to out_dim with a kernel of size 1.
+        self.down = nn.ModuleList(down)
+        self.up = nn.ModuleList(up)
+
+        #: Final output: a final convolution that maps up_channels[-1] to out_dim with a kernel of size 1.
         self.project_down = nn.Conv2d(up_channels[-1], out_dim, 1)
 
     def forward(self, x, timestep):
@@ -88,15 +94,13 @@ class SimpleUnet(nn.Module):
         # Initial conv
         x = self.project_up(x)
 
-        # Unet: iterate through the downsampling operations and the upsampling operations. Do not forget to include the residual connections
-        # between the outputs from the downsample stage and the upsample stage.
         residuals = []
         for i in range(self.depth):
             x = self.down[i](x, t)
             residuals.append(x)
 
         for i in range(self.depth):
-            x = torch.concat((x, residuals[-(i+1)]), 1)
+            x = torch.concat((x, residuals[-(i + 1)]), 1)
             x = self.up[i](x, t)
 
         return self.project_down(x)
