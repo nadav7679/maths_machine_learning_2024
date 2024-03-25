@@ -102,14 +102,14 @@ if __name__ == "__main__":
 
     print(len(modules))
 
-    # l = 33
-    # print(f"Activation layer name: {modules[l]}")
-    # mod_img = deepdream_optim(4, 0.1, doggie.clone(), modules[l][1], modules[l][1], True)[0]
-    # show_images(doggie, mod_img, f"Layer number {l} of type {modules[l][1]}")
-    for i, (name, module) in enumerate(modules[::-1]):
-        try:
-            mod_img = deepdream_optim(4, 0.01, doggie.clone(), module, name, normalize=True)[0]
-            show_images(doggie, mod_img, f"Layer number {i} of type {name}")
-        except:
-            continue
+    l = 33
+    print(f"Activation layer name: {modules[l]}")
+    mod_img = deepdream_optim(4, 0.1, doggie.clone(), modules[l][1], modules[l][1], True)[0]
+    show_images(doggie, mod_img, f"Layer number {l} of type {modules[l][1]}")
+    # for i, (name, module) in enumerate(modules[::-1]):
+    #     try:
+    #         mod_img = deepdream_optim(4, 0.01, doggie.clone(), module, name, normalize=True)[0]
+    #         show_images(doggie, mod_img, f"Layer number {i} of type {name}")
+    #     except:
+    #         continue
     # Cool configs: (l,iter,lr)=(4,5,0.015), (5,5,0.1)

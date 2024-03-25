@@ -32,6 +32,8 @@ class Diffusion():
         #: Precalculating values
         self.sqrt_alpha_bar = torch.sqrt(self.alpha_bar)
         self.sqrt_one_minus_alpha_bar = torch.sqrt(1 - self.alpha_bar)
+        alpha_bar_prev = torch.cat((torch.tensor([1.]).to(device=device), self.alpha_bar[:-1]), 0)
+        self.posterior_variance = self.beta * (1 - alpha_bar_prev) / (1 - self.alpha_bar)
 
     def forward_diffusion_sample(self, x_0: torch.Tensor, t: torch.Tensor):
         """
@@ -45,10 +47,10 @@ class Diffusion():
         if x_0.shape[0] != t.shape[0]:
             raise ValueError("x_0 and t must have same shape[0] which is batch_size")
 
-        epsilon = torch.randn_like(x_0, dtype=torch.float32, device=self.device)
-        noise = get_index_from_list(self.sqrt_one_minus_alpha_bar, t, x_0.shape) * epsilon
+        pure_noise = torch.randn_like(x_0, dtype=torch.float32, device=self.device)
+        scaled_noise = get_index_from_list(self.sqrt_one_minus_alpha_bar, t, x_0.shape) * pure_noise
 
-        return get_index_from_list(self.sqrt_one_minus_alpha_bar, t, x_0.shape) * x_0 + noise, noise
+        return get_index_from_list(self.sqrt_alpha_bar, t, x_0.shape) * x_0 + scaled_noise, pure_noise
 
     def get_loss(self, x_0, t):
         """
@@ -80,13 +82,16 @@ class Diffusion():
         if xt.shape[0] != t.shape[0] and xt.shape[0] != 1:
             raise ValueError("xt and t must have same shape[0] which is 1")
 
-        noise_coeff = (1 - self.alpha[i]) / (1 - self.alpha_bar[i]) ** .5
-        mean = 1 / self.sqrt_alpha_bar[i] * (xt - noise_coeff * self.unet(xt, t))
-        # Choose second option for sigma_t
-        posterior_std = (self.sqrt_one_minus_alpha_bar[i - 1] / self.sqrt_one_minus_alpha_bar[i]
-                         * torch.sqrt(self.beta[i]))
+        beta = get_index_from_list(self.beta, t, xt.shape)
+        sqrt_alpha_recip = torch.sqrt(1/(1-beta))
+        sqrt_one_minus_alpha_bar = get_index_from_list(self.sqrt_one_minus_alpha_bar, t, xt.shape)
+        posterior_variance = get_index_from_list(self.posterior_variance, t, xt.shape) * torch.sqrt(self.beta[i])
 
-        return mean + posterior_std * torch.randn(xt.shape, device=xt.device)
+        mean = sqrt_alpha_recip * (xt - (beta/sqrt_one_minus_alpha_bar) * self.unet(xt, t))
+        if i == 0:
+            return mean
+
+        return mean + torch.sqrt(posterior_variance) * torch.randn(xt.shape, device=xt.device)
 
     @torch.no_grad()
     def sample(self, shape):

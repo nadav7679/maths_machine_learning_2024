@@ -1,3 +1,5 @@
+import math
+
 import torch
 import matplotlib.pyplot as plt
 
@@ -23,12 +25,14 @@ class SinusoidalPositionEmbeddings(torch.nn.Module):
 
 
 if __name__ == "__main__":
-    d = 100
-    N = 60
-    embed = SinusoidalPositionEmbeddings(d)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    d = 512
+    N = 100
+    embed = SinusoidalPositionEmbeddings(d, device)
     res = embed(torch.linspace(0.001, 1, N))
 
-    plt.imshow(res)
+    plt.figure(figsize=(15, 8))
+    plt.imshow(res.cpu().numpy())
     plt.xlabel(f"Embedding dimension - d={d}")
     plt.ylabel(f"Original dimension - time position - N={N}")
     plt.gca().invert_yaxis()

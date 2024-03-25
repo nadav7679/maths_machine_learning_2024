@@ -37,11 +37,11 @@ class Block(nn.Module):
         """
         t = self.relu(self.time_mlp(t))
         x = self.relu(self.conv1(x))
-        x = self.bnorm1(x)  # TODO: unsure about this but ok
+        x = self.bnorm1(x)
 
         x = x + t[:, :, None, None]
         x = self.relu(self.conv2(x))
-        x = self.bnorm2(x)  # TODO: again unsure
+        x = self.bnorm2(x)
 
         return self.transform(x)
 
@@ -62,10 +62,10 @@ class SimpleUnet(nn.Module):
         self.device = device
 
         image_channels = 1
-        down_channels = [6 * (2 ** i) for i in range(self.depth + 1)]
-        up_channels = [(6 * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
+        down_channels = [32 * (2 ** i) for i in range(self.depth + 1)]
+        up_channels = [(32 * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
         out_dim = image_channels
-        time_emb_dim = IMG_SIZE
+        time_emb_dim = 32
 
         #: Sinusoidal time embedding
         self.time_embed = SinusoidalPositionEmbeddings(time_emb_dim, device)
@@ -100,7 +100,7 @@ class SimpleUnet(nn.Module):
             residuals.append(x)
 
         for i in range(self.depth):
-            x = torch.concat((x, residuals[-(i + 1)]), 1)
+            x = torch.concat((x, residuals.pop()), 1)
             x = self.up[i](x, t)
 
         return self.project_down(x)

@@ -52,7 +52,7 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
             optimizer.zero_grad()
 
             # Get loss (using forward diffusion and run through unet)
-            t = torch.randint(0, diffusion.T, (batch_size, ), device=device)
+            t = torch.randint(0, diffusion.T, (batch_size, ), device=device, dtype=torch.long)
             loss = diffusion.get_loss(images, t)
 
             loss.backward()
@@ -67,15 +67,32 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
 
     print('Finished Training')
 
+# Simulate forward diffusion
+# torch.manual_seed(2530622)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# T = 20
+# diffusion = Diffusion(T, device)
+#
+# batch = next(iter(dataloader))["pixel_values"].to(device=device)
+# num_images = 5
+# stepsize = int(T/num_images)
+#
+# for idx in range(0, T, stepsize):
+#     t = torch.Tensor([idx]).type(torch.int64).to(device=device)
+#     img, noise = diffusion.forward_diffusion_sample(batch[5, :, :, :], t)
+#     plt.imshow(img.reshape(28, 28).cpu().numpy(), cmap="gray")
+#     plt.show()
+
 
 # Run training loop
+torch.manual_seed(2530622)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-diffusion = Diffusion(500, device)
+diffusion = Diffusion(1000, device)
 
 print(f"Number of parameters: {sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)}")
 
-optimizer = torch.optim.Adam(diffusion.unet.parameters(), 0.00002)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
+optimizer = torch.optim.Adam(diffusion.unet.parameters(), 0.001)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
-train(diffusion, 30, optimizer, scheduler, device)
-torch.save(diffusion.unet, "unet_T500_C6_E30.tr")
+train(diffusion, 10, optimizer, scheduler, device)
+torch.save(diffusion.unet, "unet_T1000_C32_E10.tr")

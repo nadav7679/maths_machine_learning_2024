@@ -2,21 +2,38 @@ import torch
 from diffusion import Diffusion
 import matplotlib.pyplot as plt
 
+
+def plot_image_sequence(images, seq_len=10):
+    """ Plots some samples from the dataset """
+    step_size = len(images) // seq_len
+    batch_size = images[0].shape[0]
+
+    print(seq_len, batch_size)
+    figure, axes = plt.subplots(batch_size, seq_len + 1)
+
+    for i in range(seq_len + 1):
+        t = i * step_size if i != seq_len else i*step_size-1
+
+        batch = images[t]
+        axes[0, i].set_title(f"t={i * step_size}")
+
+        for j in range(batch_size):
+            axes[j, i].imshow(batch[j][0], cmap="gray")
+            axes[j, i].axis(False)
+
+
+    plt.show()
+
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-T = 500
+T = 1000
 diffusion = Diffusion(T, device)
 
 # Load model
-diffusion.unet = torch.load("./unet_T500_C6_E20.tr")
+diffusion.unet = torch.load("./unet_T1000_C32_E10.tr")
 
 # Sample from model
 imgs = diffusion.sample([10, 1, 28, 28])
-img_seq_0 = [imgs_t[0] for imgs_t in imgs]
-print(len(img_seq_0))
-# for i in reversed(range(100)):
-#     plt.imshow(img_seq_0[i][0])
-#     plt.pause(0.1)
-#     plt.clf()
-plt.imshow(img_seq_0[10][0])
-plt.show()
+
+plot_image_sequence(imgs, 10)
 
