@@ -16,10 +16,10 @@ class SinusoidalPositionEmbeddings(torch.nn.Module):
         pos = torch.arange(len(time)).unsqueeze(1)
         two_i = torch.arange(0, self.dim, 2)
 
-        arg = torch.exp(torch.log(pos) - two_i * torch.log(torch.tensor(10 ** 4)) / self.dim)
+        arg = torch.exp(-two_i * torch.log(torch.tensor(10 ** 4)) / self.dim)
 
-        res[:, 0::2] = torch.sin(arg)
-        res[:, 1::2] = torch.cos(arg)
+        res[:, 0::2] = torch.sin(pos * arg)
+        res[:, 1::2] = torch.cos(pos * arg)
 
         return res
 

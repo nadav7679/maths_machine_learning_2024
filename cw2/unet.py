@@ -51,7 +51,7 @@ class SimpleUnet(nn.Module):
     A simplified variant of the Unet architecture.
     """
 
-    def __init__(self, device):
+    def __init__(self, base_channels, device):
         super().__init__()
 
         #: The 'depth' of the unet, i.e. the amount of down blocks and up blocks.
@@ -62,8 +62,8 @@ class SimpleUnet(nn.Module):
         self.device = device
 
         image_channels = 1
-        down_channels = [32 * (2 ** i) for i in range(self.depth + 1)]
-        up_channels = [(32 * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
+        down_channels = [base_channels * (2 ** i) for i in range(self.depth + 1)]
+        up_channels = [(base_channels * 2 ** (self.depth - i)) for i in range(self.depth + 1)]
         out_dim = image_channels
         time_emb_dim = 32
 
