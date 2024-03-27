@@ -3,14 +3,27 @@ import matplotlib.pyplot as plt
 
 
 class Deepdream:
+    """
+    Deepdream class for generating dream-like images using Inception 3 PyTorch.
+    """
+
     def __init__(self, target_modules, iterations, lr):
+        """
+        Initialize Deepdream with target modules (layers to optimize), iterations, and learning rate.
+
+        :param target_modules: List of target module names to focus on during optimization.
+        :param iterations: Number of iterations for optimization.
+        :param lr: Learning rate for optimization.
+        """
         self.target_modules = target_modules
         self.iterations = iterations
         self.lr = lr
 
+        # Load pre-trained InceptionV3 model
         self.model: torch.nn.Module = torch.hub.load('pytorch/vision:v0.10.0', 'inception_v3', pretrained=True)
         self.model.eval()
 
+        # Extract all modules and references from the model
         modules = {}
         for name, module in self.model.named_modules():
             modules[name] = module
@@ -31,12 +44,22 @@ class Deepdream:
         :param module_name: The name of the module we are targeting.
         :return: Callable function hook.
         """
+
         def hook(model, input, output):
             self.activation[module_name] = output
+
         return hook
 
     def deepdream(self, x: torch.Tensor, normalize=False):
-        x = x.unsqueeze(0) if len(x.shape)==3 else x
+        """
+        Generate deep dream image.
+
+        :param x: Input image tensor.
+        :param normalize: Flag to normalize gradient.
+        :return: Generated dream image tensor.
+        """
+
+        x = x.unsqueeze(0) if len(x.shape) == 3 else x
         x.requires_grad = True
 
         loss = torch.nn.MSELoss(reduction="sum")
@@ -67,15 +90,18 @@ class Deepdream:
 
         return x
 
-
     @staticmethod
     def get_module_names():
+        """
+        Get the list of module names in the pre-trained InceptionV3 model.
+
+        :return: List of module names.
+        """
         model = torch.hub.load('pytorch/vision:v0.10.0', 'inception_v3', pretrained=True)
         return [name for name, _ in model.named_modules()]
 
 
 def show_images(img, mod_img, layer=""):
-
     fig, axes = plt.subplots(1, 2)
     fig.suptitle(layer)
 
@@ -88,7 +114,6 @@ def show_images(img, mod_img, layer=""):
     axes[1].set_title("Original")
 
     plt.show()
-
 
 
 if __name__ == "__main__":
