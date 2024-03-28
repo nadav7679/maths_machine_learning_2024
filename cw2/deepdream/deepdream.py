@@ -56,13 +56,14 @@ class Deepdream:
 
         :param x: Input image tensor.
         :param normalize: Flag to normalize gradient.
-        :return: Generated dream image tensor.
+        :return: A list of dream image tensor on each iteration.
         """
 
         x = x.unsqueeze(0) if len(x.shape) == 3 else x
         x.requires_grad = True
 
         loss = torch.nn.MSELoss(reduction="sum")
+        x_seq = [x.clone()]
         for _ in range(self.iterations):
             # Forward pass input data
             self.model(x)
@@ -85,10 +86,13 @@ class Deepdream:
 
             with torch.no_grad():
                 x += self.lr * g.detach()
+                torch.clip(x, 0, 1, out=x)
 
             self.model.zero_grad()
 
-        return x
+            x_seq.append(x.clone())
+
+        return x_seq
 
     @staticmethod
     def get_module_names():
