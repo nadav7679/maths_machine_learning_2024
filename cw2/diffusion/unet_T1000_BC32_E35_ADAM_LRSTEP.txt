@@ -1,0 +1,40 @@
+/home/nadav7679/projects/firedrake/firedrake/bin/python /home/nadav7679/projects/maths_machine_learning_2024/cw2/diffusion/main.py
+Number of parameters: 928353
+Epoch: 001 | Loss: 0.0627063736319542 | lr: 0.01
+Epoch: 002 | Loss: 0.06453826278448105 | lr: 0.01
+Epoch: 003 | Loss: 0.0455910824239254 | lr: 0.01
+Epoch: 004 | Loss: 0.05139213427901268 | lr: 0.01
+Epoch: 005 | Loss: 0.047179922461509705 | lr: 0.01
+Epoch: 006 | Loss: 0.04849851131439209 | lr: 0.01
+Epoch: 007 | Loss: 0.04655292630195618 | lr: 0.01
+Epoch: 008 | Loss: 0.04801000654697418 | lr: 0.01
+Epoch: 009 | Loss: 0.037861134856939316 | lr: 0.01
+Epoch: 010 | Loss: 0.04088273271918297 | lr: 0.01
+Epoch: 011 | Loss: 0.045842062681913376 | lr: 0.001
+Epoch: 012 | Loss: 0.0407622866332531 | lr: 0.001
+Epoch: 013 | Loss: 0.0540231391787529 | lr: 0.001
+Epoch: 014 | Loss: 0.03755694255232811 | lr: 0.001
+Epoch: 015 | Loss: 0.03290079906582832 | lr: 0.001
+Epoch: 016 | Loss: 0.027389194816350937 | lr: 0.001
+Epoch: 017 | Loss: 0.045904260128736496 | lr: 0.001
+Epoch: 018 | Loss: 0.05731627345085144 | lr: 0.001
+Epoch: 019 | Loss: 0.027243399992585182 | lr: 0.001
+Epoch: 020 | Loss: 0.03286758065223694 | lr: 0.001
+Epoch: 021 | Loss: 0.028517544269561768 | lr: 0.0001
+Epoch: 022 | Loss: 0.042004428803920746 | lr: 0.0001
+Epoch: 023 | Loss: 0.04203097149729729 | lr: 0.0001
+Epoch: 024 | Loss: 0.04220404848456383 | lr: 0.0001
+Epoch: 025 | Loss: 0.05091090500354767 | lr: 0.0001
+Epoch: 026 | Loss: 0.0669235810637474 | lr: 0.0001
+Epoch: 027 | Loss: 0.06094732508063316 | lr: 0.0001
+Epoch: 028 | Loss: 0.05543440952897072 | lr: 0.0001
+Epoch: 029 | Loss: 0.03898008167743683 | lr: 0.0001
+Epoch: 030 | Loss: 0.0479179210960865 | lr: 0.0001
+Epoch: 031 | Loss: 0.028217660263180733 | lr: 1e-05
+Epoch: 032 | Loss: 0.03357648849487305 | lr: 1e-05
+Epoch: 033 | Loss: 0.04309054836630821 | lr: 1e-05
+Epoch: 034 | Loss: 0.0525086335837841 | lr: 1e-05
+Epoch: 035 | Loss: 0.02800178714096546 | lr: 1e-05
+Finished Training
+
+Process finished with exit code 0

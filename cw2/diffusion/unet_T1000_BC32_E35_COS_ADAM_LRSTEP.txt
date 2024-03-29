@@ -1,0 +1,40 @@
+/home/nadav7679/projects/firedrake/firedrake/bin/python /home/nadav7679/projects/maths_machine_learning_2024/cw2/diffusion/main.py
+Number of parameters: 928353
+Epoch: 001 | Loss: 0.11079848557710648 | lr: 0.01
+Epoch: 002 | Loss: 0.10049814730882645 | lr: 0.01
+Epoch: 003 | Loss: 0.08118758350610733 | lr: 0.01
+Epoch: 004 | Loss: 0.08877921104431152 | lr: 0.01
+Epoch: 005 | Loss: 0.08289232850074768 | lr: 0.01
+Epoch: 006 | Loss: 0.0845925584435463 | lr: 0.01
+Epoch: 007 | Loss: 0.08469317108392715 | lr: 0.01
+Epoch: 008 | Loss: 0.08218073844909668 | lr: 0.01
+Epoch: 009 | Loss: 0.07647638767957687 | lr: 0.01
+Epoch: 010 | Loss: 0.0753079205751419 | lr: 0.01
+Epoch: 011 | Loss: 0.08117374777793884 | lr: 0.001
+Epoch: 012 | Loss: 0.07348012179136276 | lr: 0.001
+Epoch: 013 | Loss: 0.09057808667421341 | lr: 0.001
+Epoch: 014 | Loss: 0.07315277308225632 | lr: 0.001
+Epoch: 015 | Loss: 0.06735782325267792 | lr: 0.001
+Epoch: 016 | Loss: 0.05683450773358345 | lr: 0.001
+Epoch: 017 | Loss: 0.08388786017894745 | lr: 0.001
+Epoch: 018 | Loss: 0.09488033503293991 | lr: 0.001
+Epoch: 019 | Loss: 0.06183028593659401 | lr: 0.001
+Epoch: 020 | Loss: 0.06382584571838379 | lr: 0.001
+Epoch: 021 | Loss: 0.060425177216529846 | lr: 0.0001
+Epoch: 022 | Loss: 0.08198004215955734 | lr: 0.0001
+Epoch: 023 | Loss: 0.07510172575712204 | lr: 0.0001
+Epoch: 024 | Loss: 0.07627497613430023 | lr: 0.0001
+Epoch: 025 | Loss: 0.08749354630708694 | lr: 0.0001
+Epoch: 026 | Loss: 0.10161963850259781 | lr: 0.0001
+Epoch: 027 | Loss: 0.0979401245713234 | lr: 0.0001
+Epoch: 028 | Loss: 0.08862697333097458 | lr: 0.0001
+Epoch: 029 | Loss: 0.07625903934240341 | lr: 0.0001
+Epoch: 030 | Loss: 0.08134666085243225 | lr: 0.0001
+Epoch: 031 | Loss: 0.056841135025024414 | lr: 1e-05
+Epoch: 032 | Loss: 0.059678081423044205 | lr: 1e-05
+Epoch: 033 | Loss: 0.08025426417589188 | lr: 1e-05
+Epoch: 034 | Loss: 0.08660681545734406 | lr: 1e-05
+Epoch: 035 | Loss: 0.057318948209285736 | lr: 1e-05
+Finished Training
+
+Process finished with exit code 0
