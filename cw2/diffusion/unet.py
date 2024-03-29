@@ -91,7 +91,7 @@ class SimpleUnet(nn.Module):
         up = []
         for i in range(self.depth):
             out_pad = 1 if i == 0 else 0
-            normalize = (i == self.depth - 1)
+            normalize = (i != self.depth - 1)  # False normalize on last up block
             in_shape = [up_channels[i], 28 // 2**(self.depth-i), 28 // 2**(self.depth-i)]
             up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, in_shape, normalize, True, out_pad))
 
