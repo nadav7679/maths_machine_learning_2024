@@ -39,11 +39,13 @@ class Block(nn.Module):
         A second convolution should be applied and finally passed through the self.transform.
         """
         t = self.relu(self.time_mlp(t))
-        x = self.relu(self.bnorm1(self.conv1(x)))
+        x = self.relu(self.conv1(x))
+        x = self.bnorm1(x)
         # x = self.dropout(x)
 
         x = x + t[:, :, None, None]
-        x = self.relu(self.bnorm2(self.conv2(x)))
+        x = self.relu(self.conv2(x))
+        x = self.bnorm2(x)
 
         return self.transform(x)
 
