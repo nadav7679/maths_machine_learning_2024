@@ -8,7 +8,7 @@ BATCH_SIZE = 128
 
 
 class Block(nn.Module):
-    def __init__(self, in_ch, out_ch, time_emb_dim, up=False, output_padding=0, dropout=0.1):
+    def __init__(self, in_ch, out_ch, time_emb_dim, up=False, bottom=False, dropout=0.1):
         """
         in_ch refers to the number of channels in the input to the operation and out_ch how many should be in the output
         """
@@ -17,7 +17,13 @@ class Block(nn.Module):
         self.time_mlp = nn.Linear(time_emb_dim, out_ch)
         if up:
             self.conv1 = nn.Conv2d(2 * in_ch, out_ch, 3, padding=1)
-            self.transform = nn.ConvTranspose2d(out_ch, out_ch, 4, 2, 1, output_padding=output_padding)
+            kernel, padding = (4, 2) if bottom else (3, 1)
+
+            self.transform = nn.Sequential(
+                nn.Upsample(scale_factor=2, mode="nearest"),
+                nn.Conv2d(out_ch, out_ch, kernel, padding=padding),
+            )
+            # self.transform = nn.ConvTranspose2d(out_ch, out_ch, 2, 2, output_padding=output_padding)  # changed params so ker==stride
 
         else:
             self.conv1 = nn.Conv2d(in_ch, out_ch, 3, padding=1)
@@ -84,8 +90,9 @@ class SimpleUnet(nn.Module):
 
         up = []
         for i in range(self.depth):
-            out_pad = 1 if i == 0 else 0
-            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, True, out_pad))
+            # out_pad = 1 if i == 0 else 0
+            bottom = (i == 0)
+            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, True, bottom))
 
         self.down = nn.ModuleList(down)
         self.up = nn.ModuleList(up)
@@ -120,5 +127,4 @@ if __name__ == "__main__":
     t = torch.randperm(batch_size, device=device)
 
     unetted_x = unet(x, t)
-    for m in unet.named_modules():
-        print(m)
+    print(unetted_x.shape)
