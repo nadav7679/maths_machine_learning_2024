@@ -8,24 +8,31 @@ BATCH_SIZE = 128
 
 
 class Block(nn.Module):
-    def __init__(self, in_ch, out_ch, time_emb_dim, up=False):
+    def __init__(self, in_ch, out_ch, time_emb_dim, shape, normalize=True, up=False, output_padding=0, dropout=0.1):
         """
         in_ch refers to the number of channels in the input to the operation and out_ch how many should be in the output
         """
         super().__init__()
+
+        self.normalize = normalize
+
         self.time_mlp = nn.Linear(time_emb_dim, out_ch)
         if up:
+            shape = [2 * shape[0], shape[1], shape[2]]
             self.conv1 = nn.Conv2d(2 * in_ch, out_ch, 3, padding=1)
-            self.transform = nn.ConvTranspose2d(out_ch, out_ch, 4, 2, 1)
+            self.transform = nn.ConvTranspose2d(out_ch, out_ch, 4, 2, 1, output_padding=output_padding)
 
         else:
             self.conv1 = nn.Conv2d(in_ch, out_ch, 3, padding=1)
             self.transform = nn.Conv2d(out_ch, out_ch, 4, 2, 1)
 
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3, padding=1)
-        self.bnorm1 = nn.BatchNorm2d(out_ch)
-        self.bnorm2 = nn.BatchNorm2d(out_ch)
+        # self.bnorm1 = nn.BatchNorm2d(out_ch)
+        # self.bnorm2 = nn.BatchNorm2d(out_ch)
+
+        self.ln = nn.LayerNorm(shape)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, t):
         """
@@ -35,13 +42,15 @@ class Block(nn.Module):
         The time embedding should get added the output from the input convolution
         A second convolution should be applied and finally passed through the self.transform.
         """
+        x = self.ln(x) if self.normalize else x
         t = self.relu(self.time_mlp(t))
         x = self.relu(self.conv1(x))
-        x = self.bnorm1(x)
+        # x = self.bnorm1(x)
+        x = self.dropout(x)
 
         x = x + t[:, :, None, None]
         x = self.relu(self.conv2(x))
-        x = self.bnorm2(x)
+        # x = self.bnorm2(x)
 
         return self.transform(x)
 
@@ -57,7 +66,7 @@ class SimpleUnet(nn.Module):
         #: The 'depth' of the unet, i.e. the amount of down blocks and up blocks.
         #: It has to be below 3 to avoid various problems with image size H,W (e.g. H,W shrinks to 1,1 which is too
         #: small to kernel size, or unmatching H,W between same-level up and down blocks)
-        self.depth = 2
+        self.depth = 3
         #: Device
         self.device = device
 
@@ -76,11 +85,15 @@ class SimpleUnet(nn.Module):
         # Downsample and upsample
         down = []
         for i in range(self.depth):
-            down.append(Block(down_channels[i], down_channels[i + 1], time_emb_dim))
+            in_shape = [down_channels[i], 28 // 2**i, 28 // 2**i]
+            down.append(Block(down_channels[i], down_channels[i + 1], time_emb_dim, in_shape))
 
         up = []
         for i in range(self.depth):
-            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, True))
+            out_pad = 1 if i == 0 else 0
+            normalize = (i == self.depth - 1)
+            in_shape = [up_channels[i], 28 // 2**(self.depth-i), 28 // 2**(self.depth-i)]
+            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, in_shape, normalize, True, out_pad))
 
         self.down = nn.ModuleList(down)
         self.up = nn.ModuleList(up)
@@ -107,11 +120,13 @@ class SimpleUnet(nn.Module):
 
 
 if __name__ == "__main__":
-    unet = SimpleUnet()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    unet = SimpleUnet(15, device).to(device=device)
 
     batch_size = 5
-    x = torch.rand((batch_size, 1, IMG_SIZE, IMG_SIZE))
-    t = torch.randperm(batch_size)
+    x = torch.rand((batch_size, 1, IMG_SIZE, IMG_SIZE), device=device)
+    t = torch.randperm(batch_size, device=device)
 
     unetted_x = unet(x, t)
-    print(unetted_x)
+    for m in unet.named_modules():
+        print(m)
