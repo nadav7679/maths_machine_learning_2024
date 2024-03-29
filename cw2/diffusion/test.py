@@ -30,8 +30,8 @@ T = 1000
 diffusion = Diffusion(T, 32, device)
 
 # Load model
-diffusion.unet = torch.load("diffusion/unet_T1000_BC32_E35_COS_ADAM_LRSTEP.tr")
-# diffusion.unet.eval()
+diffusion.unet = torch.load("diffusion/unet_T1000_BC14_E15_cosine_LN.tr")
+diffusion.unet.eval()
 # Currently unet_T1000_C32_E10 works quite well
 
 # Sample from model
@@ -43,7 +43,8 @@ plot_image_sequence(imgs, 10)
 Notes:
 Currently, unet_T1000_BC15_E30_cosine_low_dropout_2 and unet_T1000_BC15_E35_cosine works well without 'eval' mode and with T=500, T=1000 respectivly.
 unet_T1000_BC32_E35_COS_ADAM_LRSTEP works less well though better then the ones below. Was very hard to train though
-Models that don't work well: unet_T1000_BC32_E35_ADAM_LRSTEP, unet_T1000_BC15_E30_cosine_dropout, unet_T1000_BC15_E35_ADAM_LRSTEP.
+Models that don't work well: unet_T1000_BC32_E35_ADAM_LRSTEP, unet_T1000_BC15_E30_cosine_dropout, unet_T1000_BC15_E35_ADAM_LRSTEP, unet_T1000_BC14_E15_cosine_LN.
+In fact, unet_T1000_BC14_E15_cosine_LN was shit both in evaluate and train modes.
 
 
 Seems like dropout shouldn't be too big. Also, seems like cosine works well. The effect of BC15 and BC32 architectures is unclear, although seems like BC15 works better. 

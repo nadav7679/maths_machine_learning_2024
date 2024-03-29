@@ -8,17 +8,14 @@ BATCH_SIZE = 128
 
 
 class Block(nn.Module):
-    def __init__(self, in_ch, out_ch, time_emb_dim, shape, normalize=True, up=False, output_padding=0, dropout=0.1):
+    def __init__(self, in_ch, out_ch, time_emb_dim, up=False, output_padding=0, dropout=0.1):
         """
         in_ch refers to the number of channels in the input to the operation and out_ch how many should be in the output
         """
         super().__init__()
 
-        self.normalize = normalize
-
         self.time_mlp = nn.Linear(time_emb_dim, out_ch)
         if up:
-            shape = [2 * shape[0], shape[1], shape[2]]
             self.conv1 = nn.Conv2d(2 * in_ch, out_ch, 3, padding=1)
             self.transform = nn.ConvTranspose2d(out_ch, out_ch, 4, 2, 1, output_padding=output_padding)
 
@@ -27,12 +24,11 @@ class Block(nn.Module):
             self.transform = nn.Conv2d(out_ch, out_ch, 4, 2, 1)
 
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3, padding=1)
-        # self.bnorm1 = nn.BatchNorm2d(out_ch)
-        # self.bnorm2 = nn.BatchNorm2d(out_ch)
+        self.bnorm1 = nn.BatchNorm2d(out_ch)
+        self.bnorm2 = nn.BatchNorm2d(out_ch)
 
-        self.ln = nn.LayerNorm(shape)
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(dropout)
+        # self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, t):
         """
@@ -42,15 +38,12 @@ class Block(nn.Module):
         The time embedding should get added the output from the input convolution
         A second convolution should be applied and finally passed through the self.transform.
         """
-        x = self.ln(x) if self.normalize else x
         t = self.relu(self.time_mlp(t))
-        x = self.relu(self.conv1(x))
-        # x = self.bnorm1(x)
-        x = self.dropout(x)
+        x = self.relu(self.bnorm1(self.conv1(x)))
+        # x = self.dropout(x)
 
         x = x + t[:, :, None, None]
-        x = self.relu(self.conv2(x))
-        # x = self.bnorm2(x)
+        x = self.relu(self.bnorm2(self.conv2(x)))
 
         return self.transform(x)
 
@@ -85,15 +78,12 @@ class SimpleUnet(nn.Module):
         # Downsample and upsample
         down = []
         for i in range(self.depth):
-            in_shape = [down_channels[i], 28 // 2**i, 28 // 2**i]
-            down.append(Block(down_channels[i], down_channels[i + 1], time_emb_dim, in_shape))
+            down.append(Block(down_channels[i], down_channels[i + 1], time_emb_dim))
 
         up = []
         for i in range(self.depth):
             out_pad = 1 if i == 0 else 0
-            normalize = (i != self.depth - 1)  # False normalize on last up block
-            in_shape = [up_channels[i], 28 // 2**(self.depth-i), 28 // 2**(self.depth-i)]
-            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, in_shape, normalize, True, out_pad))
+            up.append(Block(up_channels[i], up_channels[i + 1], time_emb_dim, True, out_pad))
 
         self.down = nn.ModuleList(down)
         self.up = nn.ModuleList(up)
