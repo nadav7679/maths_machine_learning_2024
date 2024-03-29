@@ -1,14 +1,9 @@
-from torchvision import transforms
-from torch.utils.data import DataLoader
-import numpy as np
-import torch
-from torch.optim import Adam
-from torch import nn
-from datasets import load_dataset
-from torchvision.transforms import Compose, ToTensor, Lambda, ToPILImage, CenterCrop, Resize
 import matplotlib.pyplot as plt
-import math
-from tqdm import tqdm
+import torch
+from datasets import load_dataset
+from torch.utils.data import DataLoader
+from torchvision import transforms
+from torchvision.transforms import Compose
 
 from diffusion import Diffusion
 
@@ -40,6 +35,7 @@ dataloader = DataLoader(transformed_dataset['train'], batch_size=BATCH_SIZE, shu
 
 # Main training loop
 def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloader=dataloader):
+    diffusion.unet.train()
     for epoch in range(nr_epochs):
         # iterate through batches
         for i, data in enumerate(dataloader, 0):
@@ -61,39 +57,81 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
 
 
         # print results for last batch
-        print(f"Epoch: {epoch + 1:03} | Loss: {loss} | lr: {optimizer.param_groups[0]['lr']}")
+        print(f"Epoch: {epoch + 1:03} | Loss: {loss:04} | lr: {optimizer.param_groups[0]['lr']}")
         # Update learning_rate
         scheduler.step()
 
     print('Finished Training')
 
+
+def plot_iteration_grid(imgs, stepsize, img_names=None, title=""):
+    """
+    Display a batch of images sequences.
+
+    :param imgs: A list of tensors. Essentialy an nxm matrix, each row is m iterations of the same image. Each entry
+     in imgs is a tensor of size [batch_size, 3, H, W].
+    :param stepsize: Stepsize on iterations.
+    :param img_names: List of length batch_size with names for the sequences.
+    :param title: title (optional).
+    """
+    row_length = (len(imgs) // stepsize)
+    fig, axes = plt.subplots(imgs[0].shape[0], row_length, figsize=(15, 8))
+    fig.suptitle(title, y=0.9)
+
+    if img_names is None:
+        img_names = ["" for _ in range(imgs[0].shape[0])]
+
+    if imgs[0].shape[0] == 1:
+        axes = [axes]
+
+    for i, row in enumerate(axes):
+        for j, ax in enumerate(row):
+            ax.imshow(imgs[j][i][0].cpu().detach().numpy())
+            ax.get_xaxis().set_ticks([])
+            ax.get_yaxis().set_ticks([])
+
+            if not i:
+                ax.set_title(f"iteration {j * stepsize}")
+
+            if not j:
+                ax.set_ylabel(f"{img_names[i]}")
+
+    fig.tight_layout()
+    plt.show()
+
+
 # Simulate forward diffusion
 # torch.manual_seed(2530622)
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # T = 20
-# diffusion = Diffusion(T, 28, device)
+# diffusion = Diffusion(T, 28, device, cosine=True)
 #
 # batch = next(iter(dataloader))["pixel_values"].to(device=device)
-# num_images = 5
+# imgs = batch[4:7]
+# num_images = 10
 # stepsize = int(T/num_images)
 #
-# for idx in range(0, T, stepsize):
-#     t = torch.Tensor([idx]).type(torch.int64).to(device=device)
-#     img, noise = diffusion.forward_diffusion_sample(batch[5, :, :, :], t)
-#     plt.imshow(img.reshape(28, 28).cpu().numpy(), cmap="gray")
-#     plt.show()
+# img_seq = [imgs]
+# for t in range(0, T):
+#     timesteps = torch.ones(imgs.shape[0], device=device, dtype=torch.int64) * t
+#     imgs, noise = diffusion.forward_diffusion_sample(imgs, timesteps)
+#     img_seq.append(imgs)
+#
+# plot_iteration_grid(img_seq, stepsize)
 
 
 # Run training loop
 torch.manual_seed(2530622)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-diffusion = Diffusion(1000, 30, device)
+diffusion = Diffusion(1000, 15, device, cosine=True)
 # diffusion.unet = torch.load("unet_T1000_BC25_E10.tr")
 
 print(f"Number of parameters: {sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)}")
 
-optimizer = torch.optim.Adam(diffusion.unet.parameters(), 0.0001)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+optimizer = torch.optim.Adam(diffusion.unet.parameters(), 0.01)
+# optimizer = torch.optim.SGD(diffusion.unet.parameters(), lr=0.01)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=10E-03)
 
-train(diffusion, 15, optimizer, scheduler, device)
-torch.save(diffusion.unet, "unet_T500_BC28_E30.tr")
+train(diffusion, 10, optimizer, scheduler, device)
+torch.save(diffusion.unet, "diffusion/unet_T1000_BC15_E10_cosine_low_dropout_LN.tr")
