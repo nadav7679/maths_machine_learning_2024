@@ -1,6 +1,8 @@
+import math
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from unet import SimpleUnet
@@ -17,13 +19,25 @@ def get_index_from_list(vals, t, x_shape):
 
 
 class Diffusion():
-    def __init__(self, T: int, base_channels, device):
+    def __init__(self, T: int, base_channels, device, cosine=False):
         self.unet = SimpleUnet(base_channels, device).to(device=device)
         self.T = T
         self.device = device
 
-        #: A list of T equidistant points between 0.0001 and 0.02
-        self.beta = torch.linspace(0.0001, 0.02, T, device=device)
+        if cosine:
+            alpha_bar = lambda t: math.cos((t + 0.008) / 1.008 * math.pi / 2) ** 2
+            betas = []
+            for i in range(T):
+                t1 = i / T
+                t2 = (i + 1) / T
+                betas.append(min(1 - alpha_bar(t2) / alpha_bar(t1), 0.999))
+
+            self.beta = torch.tensor(betas).to(device=device)
+
+        else:
+            #: A list of T equidistant points between 0.0001 and 0.02
+            self.beta = torch.linspace(0.0001, 0.02, T, device=device)
+
         #: A list of T equidistant points compliment to self.beta
         self.alpha = 1 - self.beta
 
