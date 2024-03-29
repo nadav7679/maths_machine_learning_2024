@@ -63,8 +63,9 @@ class Diffusion():
 
         pure_noise = torch.randn_like(x_0, dtype=torch.float32, device=self.device)
         scaled_noise = get_index_from_list(self.sqrt_one_minus_alpha_bar, t, x_0.shape) * pure_noise
+        xt = torch.clamp(get_index_from_list(self.sqrt_alpha_bar, t, x_0.shape) * x_0, -1., 1.)
 
-        return get_index_from_list(self.sqrt_alpha_bar, t, x_0.shape) * x_0 + scaled_noise, pure_noise
+        return xt + scaled_noise, pure_noise
 
     def get_loss(self, x_0, t):
         """
