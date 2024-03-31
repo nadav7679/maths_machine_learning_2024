@@ -55,7 +55,7 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
 
         # print results for last batch
         if fname is not None:
-            with open(f"{fname}.txt", "w+") as f:
+            with open(f"{fname}.txt", "a") as f:
                 print(f"Epoch: {epoch + 1:03} | Loss: {loss:04} | lr: {optimizer.param_groups[0]['lr']}", file=f)
         else:
             print(f"Epoch: {epoch + 1:03} | Loss: {loss:04} | lr: {optimizer.param_groups[0]['lr']}")
@@ -104,6 +104,7 @@ if __name__ == "__main__":
     param_num = sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)
     print(f"Number of parameters: {param_num}")
 
-    fname = f"diffusion/models/unet_T1000_BC{base_channels}_E{epochs}_{'Si' if silu else 'Re'}LU_{'COS' if cosine else 'LIN'}_P{param_num}"
+    fname = (f"diffusion/models/unet_UPSAMPLE_T1000_BC{base_channels}_E{epochs}_{'Si' if silu else 'Re'}LU"
+             f"_{'COS' if cosine else 'LIN'}_P{param_num}")
     train(diffusion, epochs, optimizer, scheduler, device, fname=fname)
     torch.save(diffusion.unet, f"{fname}.tr")
