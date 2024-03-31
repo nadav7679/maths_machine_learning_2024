@@ -19,25 +19,13 @@ def get_index_from_list(vals, t, x_shape):
 
 
 class Diffusion():
-    def __init__(self, T: int, base_channels, device, cosine=False):
-        self.unet = SimpleUnet(base_channels, device).to(device=device)
+    def __init__(self, T: int, base_channels, device, cosine=False, second_variance=False, dropout=None, silu=False):
+        self.unet = SimpleUnet(base_channels, device, dropout, silu).to(device=device)
         self.T = T
         self.device = device
 
-        if cosine:
-            alpha_bar = lambda t: math.cos((t + 0.008) / 1.008 * math.pi / 2) ** 2
-            betas = []
-            for i in range(T):
-                t1 = i / T
-                t2 = (i + 1) / T
-                betas.append(min(1 - alpha_bar(t2) / alpha_bar(t1), 0.999))
-
-            self.beta = torch.tensor(betas).to(device=device)
-
-        else:
-            #: A list of T equidistant points between 0.0001 and 0.02
-            self.beta = torch.linspace(0.0001, 0.02, T, device=device)
-
+        #: beta_t, can be either linear or cosine
+        self.beta = self.beta_schedule(T, cosine).to(device=device)
         #: A list of T equidistant points compliment to self.beta
         self.alpha = 1 - self.beta
 
@@ -46,8 +34,28 @@ class Diffusion():
         #: Precalculating values
         self.sqrt_alpha_bar = torch.sqrt(self.alpha_bar)
         self.sqrt_one_minus_alpha_bar = torch.sqrt(1 - self.alpha_bar)
-        alpha_bar_prev = torch.cat((torch.tensor([1.]).to(device=device), self.alpha_bar[:-1]), 0)
-        self.posterior_variance = self.beta * (1 - alpha_bar_prev) / (1 - self.alpha_bar)
+
+        # Two possible options for posterior_variance
+        if second_variance:
+            alpha_bar_prev = torch.cat((torch.tensor([1.]).to(device=device), self.alpha_bar[:-1]), 0)
+            self.posterior_variance = self.beta * (1 - alpha_bar_prev) / (1 - self.alpha_bar)
+        else:
+            self.posterior_variance = self.beta.clone()
+
+
+    @staticmethod
+    def beta_schedule(T, cosine, start=0.0001, end=0.02):
+        if not cosine:
+            return torch.linspace(start, end, T)
+
+        alpha_bar = lambda t: math.cos((t + 0.008) / 1.008 * math.pi / 2) ** 2
+        betas = []
+        for i in range(T):
+            t1 = i / T
+            t2 = (i + 1) / T
+            betas.append(min(1 - alpha_bar(t2) / alpha_bar(t1), 0.999))
+
+        return torch.tensor(betas)
 
     def forward_diffusion_sample(self, x_0: torch.Tensor, t: torch.Tensor):
         """
@@ -63,9 +71,9 @@ class Diffusion():
 
         pure_noise = torch.randn_like(x_0, dtype=torch.float32, device=self.device)
         scaled_noise = get_index_from_list(self.sqrt_one_minus_alpha_bar, t, x_0.shape) * pure_noise
-        xt = torch.clamp(get_index_from_list(self.sqrt_alpha_bar, t, x_0.shape) * x_0, -1., 1.)
+        xt = get_index_from_list(self.sqrt_alpha_bar, t, x_0.shape) * x_0
 
-        return xt + scaled_noise, pure_noise
+        return torch.clamp(xt + scaled_noise, -1.0, 1.0), pure_noise  # Clamp to stay in [-1,1] range.
 
     def get_loss(self, x_0, t):
         """
@@ -98,12 +106,12 @@ class Diffusion():
             raise ValueError("xt and t must have same shape[0] which is 1")
 
         beta = get_index_from_list(self.beta, t, xt.shape)
-        sqrt_alpha_recip = torch.sqrt(1/(1-beta))
+        sqrt_alpha_recip = torch.sqrt(1 / (1 - beta))
         sqrt_one_minus_alpha_bar = get_index_from_list(self.sqrt_one_minus_alpha_bar, t, xt.shape)
-        posterior_variance = get_index_from_list(self.posterior_variance, t, xt.shape) * torch.sqrt(self.beta[i])
+        posterior_variance = get_index_from_list(self.posterior_variance, t, xt.shape)
 
-        mean = sqrt_alpha_recip * (xt - (beta/sqrt_one_minus_alpha_bar) * self.unet(xt, t))
-        if i == 0:
+        mean = sqrt_alpha_recip * (xt - (beta / sqrt_one_minus_alpha_bar) * self.unet(xt, t))
+        if not i:
             return mean
 
         return mean + torch.sqrt(posterior_variance) * torch.randn(xt.shape, device=xt.device)
@@ -122,10 +130,9 @@ class Diffusion():
         return imgs
 
 
-
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    diffusion = Diffusion(10, device)
+    diffusion = Diffusion(10, 32, device, False, True, silu=True)
 
     # Sample from posterior (random noise -> image)
     imgs = diffusion.sample([4, 1, 28, 28])
@@ -133,7 +140,3 @@ if __name__ == "__main__":
     for i in reversed(range(10)):
         plt.imshow(img_seq_0[i][0])
         plt.pause(0.5)
-
-    # test = torch.randn((28, 28), device=device).unsqueeze(0).unsqueeze(0)
-    # t = torch.Tensor([3]).to(device=device)
-    # diffusion.sample_timestep(test, t)
