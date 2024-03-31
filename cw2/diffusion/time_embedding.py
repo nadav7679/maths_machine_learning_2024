@@ -38,5 +38,3 @@ if __name__ == "__main__":
     plt.gca().invert_yaxis()
     plt.colorbar()
     plt.show()
-
-# TODO: add discussion and nice plot of embedding
