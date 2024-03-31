@@ -19,8 +19,8 @@ def get_index_from_list(vals, t, x_shape):
 
 
 class Diffusion():
-    def __init__(self, T: int, base_channels, device, cosine=False, second_variance=False, dropout=None, silu=False):
-        self.unet = SimpleUnet(base_channels, device, dropout, silu).to(device=device)
+    def __init__(self, T: int, base_channels, device, upsample=False, cosine=False, second_variance=False, dropout=None, silu=False):
+        self.unet = SimpleUnet(base_channels, device, upsample, dropout, silu).to(device=device)
         self.T = T
         self.device = device
 

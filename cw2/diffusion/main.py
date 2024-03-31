@@ -77,6 +77,8 @@ if __name__ == "__main__":
                         help="Use cosine noise")
     parser.add_argument("--silu", action="store_true",
                         help="Use silu instead of relu.")
+    parser.add_argument("--upsample", action="store_true",
+                        help="Replace transposedconv to upsample with nearest neighbor.")
     parser.add_argument("base_channels", type=int, nargs=1,
                         help="The number of channels in each base level.")
     parser.add_argument("epochs", type=int, nargs=1,
@@ -90,6 +92,7 @@ if __name__ == "__main__":
     base_channels = args.base_channels[0]
     silu = args.silu
     cosine = args.cosine
+    upsample = args.upsample
     epochs = args.epochs[0]
     dropout = args.dropout[0] if args.dropout[0] != 0 else None
     lr = args.lr[0]
@@ -97,14 +100,14 @@ if __name__ == "__main__":
     torch.manual_seed(2530622)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    diffusion = Diffusion(1000, base_channels, device, cosine, True, dropout, silu)
+    diffusion = Diffusion(1000, base_channels, device, upsample, cosine, True, dropout, silu)
     optimizer = torch.optim.Adam(diffusion.unet.parameters(), lr)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
     param_num = sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)
     print(f"Number of parameters: {param_num}")
 
-    fname = (f"diffusion/models/unet_UPSAMPLE_T1000_BC{base_channels}_E{epochs}_{'Si' if silu else 'Re'}LU"
-             f"_{'COS' if cosine else 'LIN'}_P{param_num}")
+    fname = (f"diffusion/models/unet_{'UPSAMPLE' if upsample else 'TRANSPOSE'}_T1000_BC{base_channels}_E{epochs}"
+             f"_{'Si' if silu else 'Re'}LU_{'COS' if cosine else 'LIN'}_P{param_num}")
     train(diffusion, epochs, optimizer, scheduler, device, fname=fname)
     torch.save(diffusion.unet, f"{fname}.tr")

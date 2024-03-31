@@ -8,7 +8,7 @@ BATCH_SIZE = 128
 
 
 class Block(nn.Module):
-    def __init__(self, in_ch, out_ch, time_emb_dim, activation, up=False, dropout=None):
+    def __init__(self, in_ch, out_ch, time_emb_dim, activation, upsample, up=False, dropout=None):
         """
         in_ch refers to the number of channels in the input to the operation and out_ch how many should be in the output
         """
@@ -17,11 +17,14 @@ class Block(nn.Module):
         self.time_mlp = nn.Linear(time_emb_dim, out_ch)
         if up:
             self.conv1 = nn.Conv2d(2 * in_ch, out_ch, 3, padding=1)
-            self.transform = nn.Sequential(
-                nn.Upsample(scale_factor=2, mode="nearest"),
-                nn.Conv2d(out_ch, out_ch, 3, padding=1),
-            )
-            # self.transform = nn.ConvTranspose2d(out_ch, out_ch, 2, 2, output_padding=output_padding)  # changed params so ker==stride
+
+            if upsample:
+                self.transform = nn.Sequential(
+                    nn.Upsample(scale_factor=2, mode="nearest"),
+                    nn.Conv2d(out_ch, out_ch, 3, padding=1),
+                )
+            else:
+                self.transform = nn.ConvTranspose2d(out_ch, out_ch, 4, 2, 1)
 
         else:
             self.conv1 = nn.Conv2d(in_ch, out_ch, 3, padding=1)
@@ -64,7 +67,7 @@ class SimpleUnet(nn.Module):
     A simplified variant of the Unet architecture.
     """
 
-    def __init__(self, base_channels, device, dropout=None, silu=False):
+    def __init__(self, base_channels, device, upsample=False, dropout=None, silu=False):
         super().__init__()
 
         #: Device
@@ -97,6 +100,7 @@ class SimpleUnet(nn.Module):
                 down_channels[i + 1],
                 time_emb_dim,
                 self.activation,
+                upsample,
                 dropout=dropout
             ))
 
@@ -108,6 +112,7 @@ class SimpleUnet(nn.Module):
                 up_channels[i + 1],
                 time_emb_dim,
                 self.activation,
+                upsample,
                 True,
                 dropout=dropout
             ))
