@@ -7,7 +7,7 @@ from torchvision.transforms import Compose
 
 from diffusion import Diffusion
 
-BATCH_SIZE=64
+BATCH_SIZE = 64
 
 # load dataset from the hub
 dataset = load_dataset("fashion_mnist")
@@ -104,7 +104,7 @@ def plot_iteration_grid(imgs, stepsize, img_names=None, title=""):
 # torch.manual_seed(2530622)
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # T = 20
-# diffusion = Diffusion(T, 28, device, cosine=True)
+# diffusion = Diffusion(T, 28, device, True)
 #
 # batch = next(iter(dataloader))["pixel_values"].to(device=device)
 # imgs = batch[4:7]
@@ -123,15 +123,15 @@ def plot_iteration_grid(imgs, stepsize, img_names=None, title=""):
 # Run training loop
 torch.manual_seed(2530622)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-diffusion = Diffusion(1000, 15, device, cosine=True)
+diffusion = Diffusion(1000, 15, device, cosine=False)
 # diffusion.unet = torch.load("unet_T1000_BC25_E10.tr")
 
 print(f"Number of parameters: {sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)}")
 
-optimizer = torch.optim.Adam(diffusion.unet.parameters(), 0.01)
+optimizer = torch.optim.Adam(diffusion.unet.parameters(), 0.005)
 # optimizer = torch.optim.SGD(diffusion.unet.parameters(), lr=0.01)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=10E-03)
 
-train(diffusion, 10, optimizer, scheduler, device)
-torch.save(diffusion.unet, "diffusion/unet_T1000_BC15_E10_cosine_low_dropout_LN.tr")
+train(diffusion, 15, optimizer, scheduler, device)
+torch.save(diffusion.unet, "diffusion/unet_T1000_BC15_E15_LINTIME_UPSAMPLE_ADAM_LRSTEP.tr")

@@ -27,11 +27,22 @@ def plot_image_sequence(images, seq_len=10):
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-T = 1000
+T = 3000
 diffusion = Diffusion(T, 15, device)
 
+# for m in diffusion.unet.modules():
+#     # print(m)
+#     for child in m.children():
+#         if type(child) == nn.BatchNorm2d:
+#             child.track_running_stats = False
+#             child.running_mean = None
+#             child.running_var = None
+#
+# diffusion.unet.eval()
+
+
 # Load model
-diffusion.unet = torch.load("diffusion/unet_T1000_BC15_E30_cosine_low_dropout_2.tr")
+diffusion.unet = torch.load("diffusion/unet_T1000_BC15_E15_LINTIME_UPSAMPLE_ADAM_LRSTEP.tr")
 
 # Sample from model
 imgs = diffusion.sample([10, 1, 28, 28])
@@ -59,6 +70,9 @@ diffusion.unet.eval()
 
 Apperantly when you call .eval(), it changes some parameters in batchnorm that we don't want to change. We can also
 just not call .eval(), or not save/load the model, as apparently it affects the batchnorm parameters.
+
+Great article on checkerboard effect: https://distill.pub/2016/deconv-checkerboard/
+Used upsample similar to here: https://huggingface.co/blog/annotated-diffusion
 
 Seems like dropout shouldn't be too big. Also, seems like cosine works well. The effect of BC15 and BC32 architectures is unclear, although seems like BC15 works better. 
 Seems like 'eval' changes drastically the results of the model. It **turns off batchnorm** and dropout layers. It also removes the chess-board phenomena.

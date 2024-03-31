@@ -26,8 +26,8 @@ class SinusoidalPositionEmbeddings(torch.nn.Module):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    d = 512
-    N = 100
+    d = 500
+    N = 200
     embed = SinusoidalPositionEmbeddings(d, device)
     res = embed(torch.linspace(0.001, 1, N))
 
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     plt.xlabel(f"Embedding dimension - d={d}")
     plt.ylabel(f"Original dimension - time position - N={N}")
     plt.gca().invert_yaxis()
+    plt.colorbar()
     plt.show()
 
 # TODO: add discussion and nice plot of embedding

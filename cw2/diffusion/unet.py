@@ -77,8 +77,11 @@ class SimpleUnet(nn.Module):
         out_dim = image_channels
         time_emb_dim = 32
 
+        self.relu = nn.ReLU()
+
         #: Sinusoidal time embedding
         self.time_embed = SinusoidalPositionEmbeddings(time_emb_dim, device)
+        self.lin_time = nn.Linear(time_emb_dim, time_emb_dim, device)
 
         #: Initial projection to down_channels[0]
         self.project_up = nn.Conv2d(image_channels, down_channels[0], (3, 3), padding=(1, 1))
@@ -102,7 +105,7 @@ class SimpleUnet(nn.Module):
 
     def forward(self, x, timestep):
         # Embedd time
-        t = self.time_embed(timestep)
+        t = self.relu(self.lin_time(self.time_embed(timestep)))
         # Initial conv
         x = self.project_up(x)
 
