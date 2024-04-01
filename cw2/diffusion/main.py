@@ -34,7 +34,7 @@ dataloader = DataLoader(transformed_dataset['train'], batch_size=BATCH_SIZE, shu
 
 
 # Main training loop
-def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloader=dataloader, fname=None):
+def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloader=dataloader, train_samples=False, seed=None, fname=None):
     """
     Train a given diffusion model.
 
@@ -45,9 +45,15 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
         scheduler (torch.optim.lr_scheduler._LRScheduler): Scheduler.
         device (torch.device): Device.
         dataloader (torch.utils.data.DataLoader, optional): DataLoader. Defaults to global dataloader.
+        train_samples (boolean, optional): If True, return a list with samples from each epoch
+        seed (int): seed to sample from
         fname (str, optional): File name for logging. Defaults to None (print to stdout).
     """
     diffusion.unet.train()
+
+    if train_samples:
+        epoch_samples = []
+
     for epoch in range(nr_epochs):
         # Iterate through batches
         for i, data in enumerate(dataloader, 0):
@@ -65,6 +71,10 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
             loss.backward()
             optimizer.step()
 
+        # Get training samples
+        if train_samples:
+            epoch_samples.append(diffusion.sample([5, 1, 28, 28], seed))
+
         # Print results for last batch
         if fname is not None:
             with open(f"{fname}.txt", "a") as f:
@@ -75,7 +85,9 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
         # Update learning rate
         scheduler.step()
 
-    print('Finished Training')
+    print("Finished Training")
+    if train_samples:
+        return train_samples
 
 
 if __name__ == "__main__":

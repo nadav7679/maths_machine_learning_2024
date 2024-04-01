@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from tqdm import tqdm
+import numpy as np
 
 from unet import SimpleUnet
 
@@ -154,7 +155,7 @@ class Diffusion:
         return mean + torch.sqrt(posterior_variance) * torch.randn(xt.shape, device=xt.device)
 
     @torch.no_grad()
-    def sample(self, shape):
+    def sample(self, shape, seed=None):
         """
         Sample from the diffusion model.
 
@@ -164,8 +165,14 @@ class Diffusion:
         Returns:
             list: List of sampled tensors.
         """
+        if seed:
+            np.random.seed(seed)
+            img = torch.tensor(np.random.randn(*shape), dtype=torch.float32, device=self.device)
+
+        else:
+            img = torch.randn(shape, device=self.device)
+
         batch_size = shape[0]
-        img = torch.randn(shape, device=self.device)
         imgs = []
         for i in tqdm(reversed(range(0, self.T)), desc='Sampling loop time step', total=self.T):
             t = torch.full((batch_size,), i, device=self.device, dtype=torch.long)

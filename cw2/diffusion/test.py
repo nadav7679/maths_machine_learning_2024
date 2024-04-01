@@ -6,43 +6,38 @@ import matplotlib.pyplot as plt
 from main import train
 
 
-def plot_image_sequence(images, seq_len=10):
+def plot_samples(images, seq_len=10, title=""):
     """ Plots some samples from the dataset """
     step_size = len(images) // seq_len
     batch_size = images[0].shape[0]
 
-    print(seq_len, batch_size)
     figure, axes = plt.subplots(batch_size, seq_len + 1)
+    figure.suptitle(title)
+
+    if batch_size == 1:
+        axes = [axes]
 
     for i in range(seq_len + 1):
         t = i * step_size if i != seq_len else i*step_size-1
 
         batch = images[t]
-        axes[0, i].set_title(f"t={i * step_size}")
+        axes[0][i].set_title(f"t={i * step_size}")
 
         for j in range(batch_size):
-            axes[j, i].imshow(batch[j][0], cmap="gray")
-            axes[j, i].axis(False)
+            axes[j][i].imshow(batch[j][0], cmap="gray")
+            axes[j][i].axis(False)
 
 
     plt.show()
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-T = 5000
-diffusion = Diffusion(T, 30, device, False, False, True, None, True)
-
-
+T = 100
+diffusion = Diffusion(T, 32, device)
 
 # Load model
-diffusion.unet = torch.load("diffusion/models/unet_TRANSPOSE_T1000_BC30_E40_ReLU_LIN_P817687_SGD_BS128_DONone.tr")
-diffusion.unet.train()
+# diffusion.unet = torch.load("diffusion/models/unet_TRANSPOSE_T1000_BC30_E40_ReLU_LIN_P817687_ADAMW_BS128_DO0.1.tr")
 
-optimizer = torch.optim.SGD(diffusion.unet.parameters(), 0.0001)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 4, 0.1)
-train(diffusion, 12, optimizer, scheduler, device)
-torch.save(diffusion.unet, "unet_TRANSPOSE_T1000_BC30_E40_ReLU_LIN_P817687_ADAMW_SGD_TRY_BS128_DONone.tr")
-# #
 # for m in diffusion.unet.modules():
 #     # print(m)
 #     for child in m.children():
@@ -54,9 +49,10 @@ torch.save(diffusion.unet, "unet_TRANSPOSE_T1000_BC30_E40_ReLU_LIN_P817687_ADAMW
 # diffusion.unet.eval()
 
 # Sample from model
-imgs = diffusion.sample([10, 1, 28, 28])
+for i in range(100):
+    imgs = diffusion.sample([1, 1, 28, 28], seed=i)
+    plot_samples(imgs, 1, title=f"Seed={i}")
 
-plot_image_sequence(imgs, 10)
 
 """
 Notes:
