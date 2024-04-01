@@ -8,7 +8,7 @@ from torchvision.transforms import Compose
 
 from diffusion import Diffusion
 
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 
 # load dataset from the hub
 dataset = load_dataset("fashion_mnist")
@@ -56,9 +56,9 @@ def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloa
         # print results for last batch
         if fname is not None:
             with open(f"{fname}.txt", "a") as f:
-                print(f"Epoch: {epoch + 1:03} | Loss: {loss:04} | lr: {optimizer.param_groups[0]['lr']}", file=f)
+                print(f"Epoch: {epoch + 1:03} | Loss: {loss:.4f} | lr: {optimizer.param_groups[0]['lr']}", file=f)
         else:
-            print(f"Epoch: {epoch + 1:03} | Loss: {loss:04} | lr: {optimizer.param_groups[0]['lr']}")
+            print(f"Epoch: {epoch + 1:03} | Loss: {loss:.4f} | lr: {optimizer.param_groups[0]['lr']}")
 
         # Update learning_rate
         scheduler.step()
@@ -101,13 +101,16 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     diffusion = Diffusion(1000, base_channels, device, upsample, cosine, True, dropout, silu)
-    optimizer = torch.optim.Adam(diffusion.unet.parameters(), lr)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    optimizer = torch.optim.AdamW(diffusion.unet.parameters(), lr)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 25], gamma=0.1)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    # optimizer = torch.optim.SGD(diffusion.unet.parameters(), lr)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=0.001)
 
     param_num = sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)
     print(f"Number of parameters: {param_num}")
 
     fname = (f"diffusion/models/unet_{'UPSAMPLE' if upsample else 'TRANSPOSE'}_T1000_BC{base_channels}_E{epochs}"
-             f"_{'Si' if silu else 'Re'}LU_{'COS' if cosine else 'LIN'}_P{param_num}")
+             f"_{'Si' if silu else 'Re'}LU_{'COS' if cosine else 'LIN'}_P{param_num}_ADAMW_BS{BATCH_SIZE}_DO{dropout}")
     train(diffusion, epochs, optimizer, scheduler, device, fname=fname)
     torch.save(diffusion.unet, f"{fname}.tr")
