@@ -1,0 +1,12 @@
+Epoch: 001 | Loss: 0.0907 | lr: 0.0001
+Epoch: 002 | Loss: 0.0881 | lr: 0.0001
+Epoch: 003 | Loss: 0.0816 | lr: 0.0001
+Epoch: 004 | Loss: 0.0983 | lr: 0.0001
+Epoch: 005 | Loss: 0.0921 | lr: 1e-05
+Epoch: 006 | Loss: 0.0861 | lr: 1e-05
+Epoch: 007 | Loss: 0.0873 | lr: 1e-05
+Epoch: 008 | Loss: 0.0835 | lr: 1e-05
+Epoch: 009 | Loss: 0.0842 | lr: 1.0000000000000002e-06
+Epoch: 010 | Loss: 0.0916 | lr: 1.0000000000000002e-06
+Epoch: 011 | Loss: 0.0950 | lr: 1.0000000000000002e-06
+Epoch: 012 | Loss: 0.0870 | lr: 1.0000000000000002e-06

@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-import matplotlib.pyplot as plt
+
 import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
@@ -35,39 +35,47 @@ dataloader = DataLoader(transformed_dataset['train'], batch_size=BATCH_SIZE, shu
 
 # Main training loop
 def train(diffusion: Diffusion, nr_epochs, optimizer, scheduler, device, dataloader=dataloader, fname=None):
+    """
+    Train a given diffusion model.
+
+    Args:
+        diffusion (Diffusion): Diffusion model.
+        nr_epochs (int): Number of epochs.
+        optimizer (torch.optim.Optimizer): Optimizer.
+        scheduler (torch.optim.lr_scheduler._LRScheduler): Scheduler.
+        device (torch.device): Device.
+        dataloader (torch.utils.data.DataLoader, optional): DataLoader. Defaults to global dataloader.
+        fname (str, optional): File name for logging. Defaults to None (print to stdout).
+    """
     diffusion.unet.train()
     for epoch in range(nr_epochs):
-        # iterate through batches
+        # Iterate through batches
         for i, data in enumerate(dataloader, 0):
-            # get inputs
+            # Get inputs
             images = data["pixel_values"]
             images = images.to(device)
             batch_size = images.shape[0]
 
             optimizer.zero_grad()
 
-            # Get loss (using forward diffusion and run through unet)
+            # Get loss (using forward diffusion and run through UNet)
             t = torch.randint(0, diffusion.T, (batch_size,), device=device, dtype=torch.long)
             loss = diffusion.get_loss(images, t)
 
             loss.backward()
             optimizer.step()
 
-        # print results for last batch
+        # Print results for last batch
         if fname is not None:
             with open(f"{fname}.txt", "a") as f:
                 print(f"Epoch: {epoch + 1:03} | Loss: {loss:.4f} | lr: {optimizer.param_groups[0]['lr']}", file=f)
         else:
             print(f"Epoch: {epoch + 1:03} | Loss: {loss:.4f} | lr: {optimizer.param_groups[0]['lr']}")
 
-        # Update learning_rate
+        # Update learning rate
         scheduler.step()
 
     print('Finished Training')
-
-
-# optimizer = torch.optim.SGD(diffusion.unet.parameters(), lr=0.01)
-# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=10E-03)
 
 
 if __name__ == "__main__":
@@ -103,9 +111,6 @@ if __name__ == "__main__":
     diffusion = Diffusion(1000, base_channels, device, upsample, cosine, True, dropout, silu)
     optimizer = torch.optim.AdamW(diffusion.unet.parameters(), lr)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 25], gamma=0.1)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    # optimizer = torch.optim.SGD(diffusion.unet.parameters(), lr)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, threshold=0.001)
 
     param_num = sum(p.numel() for p in diffusion.unet.parameters() if p.requires_grad)
     print(f"Number of parameters: {param_num}")

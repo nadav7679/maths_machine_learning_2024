@@ -18,8 +18,26 @@ def get_index_from_list(vals, t, x_shape):
     return out.reshape(batch_size, *((1,) * (len(x_shape) - 1))).to(t.device)
 
 
-class Diffusion():
-    def __init__(self, T: int, base_channels, device, upsample=False, cosine=False, second_variance=False, dropout=None, silu=False):
+class Diffusion:
+    """
+    Class for the diffusion model.
+    """
+
+    def __init__(self, T: int, base_channels, device, upsample=False, cosine=False, second_variance=True, dropout=None,
+                 silu=False):
+        """
+        Initializes the diffusion model.
+
+        Args:
+            T (int): Number of timesteps.
+            base_channels (int): Number of channels at first layer of UNet.
+            device (torch.device): Device to run the model on.
+            upsample (bool, optional): Whether to use nearest-neighbor upsample or convTranspose. Defaults to False.
+            cosine (bool, optional): Use cosine beta schedule or linear schedule. Defaults False.
+            second_variance (bool, optional): Whether to use the second type of variance. Defaults to True.
+            dropout (float, optional): Dropout rate. Defaults to None.
+            silu (bool, optional): Whether to use SiLU activation or ReLU. Defaults to False.
+        """
         self.unet = SimpleUnet(base_channels, device, upsample, dropout, silu).to(device=device)
         self.T = T
         self.device = device
@@ -45,6 +63,18 @@ class Diffusion():
 
     @staticmethod
     def beta_schedule(T, cosine, start=0.0001, end=0.02):
+        """
+        Generate the beta_t for the noisy timesteps.
+
+        Args:
+            T (int): Number of timesteps.
+            cosine (bool): Whether to use cosine nosise, based on reference [4].
+            start (float): Start value of the linear schedule.
+            end (float): End value of the linear schedule.
+
+        Returns:
+            torch.Tensor: Beta schedule tensor.
+        """
         if not cosine:
             return torch.linspace(start, end, T)
 
@@ -59,12 +89,14 @@ class Diffusion():
 
     def forward_diffusion_sample(self, x_0: torch.Tensor, t: torch.Tensor):
         """
-        Forward diffusion process, i.e. take an image or batch of images and return the images at timestep t, which
-        a certain amount of noise determined by t.
-        :param x_0: torch.Tensor of clean datapoint images in batch of shape [batch_size, 1, 28, 28]
-        :param t: torch.Tensor of values ranging from 0 to T with shape [batch_size]
-        :param device: Device
-        :return: torch.Tensor with shape as x_0 but with noise determined by t.
+        Forward diffusion process.
+
+        Args:
+            x_0 (torch.Tensor): Clean datapoint images in batch.
+            t (torch.Tensor): Timestep tensor.
+
+        Returns:
+            tuple: Noisy image and pure noise tensor.
         """
         if x_0.shape[0] != t.shape[0]:
             raise ValueError("x_0 and t must have same shape[0] which is batch_size")
@@ -77,12 +109,14 @@ class Diffusion():
 
     def get_loss(self, x_0, t):
         """
-        Loss per batch (x_0, t).
-        Sample forward diffusion, get noisy image, get noise from unet, compare noise from unet to image noise.
+        Loss per batch.
 
-        :param x_0: torch.Tensor of clean datapoint images in batch of shape [batch_size, 1, 28, 28]
-        :param t: torch.Tensor of values ranging from 0 to T with shape [batch_size]
-        :return: MSE loss between the noise and model's prediction of noise, reduced over batch.
+        Args:
+            x_0 (torch.Tensor): Clean datapoint images in batch.
+            t (torch.Tensor): Timestep tensor.
+
+        Returns:
+            torch.Tensor: MSE loss between the noise and model's prediction of noise.
         """
         if x_0.shape[0] != t.shape[0]:
             raise ValueError("x_0 and t must have same shape[0] which is batch_size")
@@ -97,10 +131,13 @@ class Diffusion():
         Calls the model to predict the noise in the image based on t and returns the denoised image.
         Applies noise to this image, if we are not in the last step yet.
 
-        :param xt: torch.Tensor of a *single* noisy image, shape [28, 28]
-        :param t: torch.Tensor the timestep of the noisy image
-        :param i: no idea
-        :return:
+        Args:
+            xt (torch.Tensor): Noisy image tensor.
+            t (torch.Tensor): Timestep tensor.
+            i (int): Timestep index.
+
+        Returns:
+            torch.Tensor: Denoised image.
         """
         if xt.shape[0] != t.shape[0] and xt.shape[0] != 1:
             raise ValueError("xt and t must have same shape[0] which is 1")
@@ -118,8 +155,16 @@ class Diffusion():
 
     @torch.no_grad()
     def sample(self, shape):
+        """
+        Sample from the diffusion model.
+
+        Args:
+            shape (list or tuple): Shape of the tensor to sample.
+
+        Returns:
+            list: List of sampled tensors.
+        """
         batch_size = shape[0]
-        # start from pure noise (for each example in the batch)
         img = torch.randn(shape, device=self.device)
         imgs = []
         for i in tqdm(reversed(range(0, self.T)), desc='Sampling loop time step', total=self.T):
